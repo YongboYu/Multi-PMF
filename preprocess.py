@@ -18,18 +18,20 @@ def preprocess_event_log(dataset, input_path, output_path, filter_perc=0.0001, t
     # file paths
     input_file = os.path.join(input_path, f'{dataset}.xes')
     output_file = os.path.join(output_path, f'{dataset}.xes')
+    
+    os.makedirs(output_path, exist_ok=True)
 
     # import the log
     variant = xes_importer.Variants.ITERPARSE
     paras = {variant.value.Parameters.MAX_TRACES: 1000000000}
     org_log = xes_importer.apply(input_file, parameters=paras)
 
-    # filter the infrequent variants (traces)
+    # filter the infrequent variants
     filter_log = pm4py.filter_variants_by_coverage_percentage(org_log, filter_perc)
 
-    # add artificial start and end points to the log
+    # add artificial start and end activities to traces
     log = pm4py.insert_artificial_start_end(filter_log, activity_key='concept:name',
-                                            case_id_key='case:concept:name', timestamp_key='time:timestamp')# 205293 traces (92.89%)
+                                            case_id_key='case:concept:name', timestamp_key='time:timestamp')
 
     # get the start and end time
     timestamps = pm4py.get_event_attribute_values(log, 'time:timestamp')

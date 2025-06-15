@@ -50,8 +50,8 @@ scaler = Scaler()
 train_scaled = scaler.fit_transform(train)
 test_scaled = scaler.transform(test)
 
-# %% generate seq2seq data for test and test_scaled
 
+# %% generate seq2seq data for test and test_scaled
 # Define input and output sizes
 input_length = 32
 output_length = 16
@@ -81,12 +81,6 @@ models = [
     ('LinearRegression', LinearRegressionModel(
         lags=32,
         output_chunk_length=16
-    )),
-    ('RandomForest', RandomForest(
-        lags=32,
-        output_chunk_length=16,
-        n_estimators=200,
-        criterion="absolute_error"
     )),
     ('LightGBM', LightGBMModel(
         lags=32,
@@ -169,6 +163,7 @@ models = [
     ))
 ]
 
+
 # %% train and save the models
 trained_models = {}
 predictions = {}
@@ -186,116 +181,87 @@ for name, model in models:
     
     
 # %% predict 
-# Initialize a dictionary to store predictions for each model
 all_model_predictions = {}
 
-# Iterate over each model in trained_models
 for name, model in trained_models.items():
     print(f'Predicting with {name} model...')
-
-    # Initialize a list to store predictions for the current model
+       
     model_predictions = []
 
-    # Loop through each TimeSeries object in test_scaled_input_seq
     for input_seq_ts in test_scaled_input_seq:
-        # Use the model's predict function to predict the output for each input sequence
         pred_series = model.predict(n=output_length, series=input_seq_ts)
         pred_series_rescaled = scaler.inverse_transform(pred_series)
 
-        # Append the predictions to the list
         model_predictions.append(pred_series_rescaled.values())
 
-    # Store the predictions for the current model in the dictionary
     all_model_predictions[name] = np.array(model_predictions)
 
-# Print the shape of predictions for each model
 for name, predictions in all_model_predictions.items():
     print(f'{name} predictions shape: {predictions.shape}')
 
 # save the predictions
 np.savez_compressed(f'./result/{dataset}/mulit_predictions.npz', **all_model_predictions)
 
-# %% transform the test output ground truth
 
-# Initialize a list to store the transformed sequences
+# %% transform the test output ground truth
 transformed_output_seq = []
 
-# Iterate over each TimeSeries object in test_output_seq
 for output_seq_ts in test_output_seq:
-    # Convert each TimeSeries object to a numpy array
     output_seq_array = output_seq_ts.values()
-    # Append the numpy array to the list
     transformed_output_seq.append(output_seq_array)
 
-# Convert the list of numpy arrays to a 3D numpy array
 transformed_output_seq_array = np.array(transformed_output_seq)
 
-# Print the shape to verify
 print(transformed_output_seq_array.shape)
 
-# %% evaluate the all predictions
 
-# Initialize a dictionary to store evaluation metrics for each model
+# %% evaluate the all predictions
 all_model_metrics = {}
 
-# Iterate over each model in all_model_predictions
 for model_name, predictions in all_model_predictions.items():
     print(f'Evaluating {model_name} model...')
 
-    # Initialize lists to store metrics for the current model
     model_mae = []
     model_rmse = []
 
-    # Loop through each prediction and corresponding ground truth
     for i in range(len(predictions)):
         pred_series = TimeSeries.from_values(predictions[i])
         true_series = TimeSeries.from_values(transformed_output_seq_array[i])
 
-        # Compute MAE and RMSE
         mae = darts_mae(true_series, pred_series)
         rmse = darts_rmse(true_series, pred_series)
 
-        # Append the metrics to the lists
         model_mae.append(mae)
         model_rmse.append(rmse)
 
-    # Store the average metrics for the current model in the dictionary
     all_model_metrics[model_name] = {
         'MAE': np.mean(model_mae),
         'RMSE': np.mean(model_rmse)
     }
 
-# Print the evaluation metrics for each model
 for model_name, metrics in all_model_metrics.items():
     print(f'{model_name} model: MAE = {metrics["MAE"]:.2f}, RMSE = {metrics["RMSE"]:.2f}')
 
 # save the metrics
 np.save(f'./result/{dataset}/all_pred_metrics.npy', all_model_metrics)
 
-# %% evaluate the last prediction
 
-# Initialize a dictionary to store evaluation metrics for each model
+# %% evaluate the last prediction
 last_day_model_metrics = {}
 
-# Iterate over each model in all_model_predictions
 for model_name, predictions in all_model_predictions.items():
     print(f'Evaluating last-day predictions for {model_name} model...')
 
-    # Initialize lists to store metrics for the current model
     model_mae = []
     model_rmse = []
 
-    # Loop through each prediction and corresponding ground truth
     for i in range(len(predictions)):
-        # Extract the last-day prediction and ground truth
         pred_series = TimeSeries.from_values(predictions[i, -1, :])
         true_series = TimeSeries.from_values(transformed_output_seq_array[i, -1, :])
 
-        # Compute MAE and RMSE
         mae = darts_mae(true_series, pred_series)
         rmse = darts_rmse(true_series, pred_series)
 
-        # Append the metrics to the lists
         model_mae.append(mae)
         model_rmse.append(rmse)
 
@@ -305,7 +271,6 @@ for model_name, predictions in all_model_predictions.items():
         'RMSE': np.mean(model_rmse)
     }
 
-# Print the evaluation metrics for each model
 for model_name, metrics in last_day_model_metrics.items():
     print(f'{model_name} model: Last-day MAE = {metrics["MAE"]:.2f}, Last-day RMSE = {metrics["RMSE"]:.2f}')
 

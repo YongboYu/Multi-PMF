@@ -26,12 +26,12 @@ def create_act_map_and_dfg(dataset, input_path, output_map_path, output_dfg_path
 
     # get the start and end time
     timestamps = pm4py.get_event_attribute_values(log, 'time:timestamp')
-    start_time = min(timestamps)  # '2018-06-01 05:30:59+0000'
-    end_time = max(timestamps)  # '2018-06-29 14:45:01+0000'
+    start_time = min(timestamps)  
+    end_time = max(timestamps)  
 
     # get activity names
     activity_names = pm4py.get_event_attribute_values(log, 'concept:name')
-    no_act = len(activity_names)  # 18
+    no_act = len(activity_names)  
     act_map = {}
     reverse_map = {}
     for a, value in enumerate(activity_names.keys()):
@@ -50,11 +50,11 @@ def create_act_map_and_dfg(dataset, input_path, output_map_path, output_dfg_path
             apairs.append(ap)
 
     sorted_aps = sorted(apairs)
-    print('#DFs:', len(sorted_aps))  # 3234
+    print('#DFs:', len(sorted_aps))  
 
-    no_daily_intervals_all = (end_time - start_time).days + 1  # 29 days
+    no_daily_intervals_all = (end_time - start_time).days + 1  
     interval_width = int(len(sorted_aps) / no_daily_intervals_all)
-    print('interval width: ', interval_width)  # 111
+    print('interval width: ', interval_width) 
 
     # save the activity maps as JSON for adjacent matrix
     output_act_map = os.path.join(output_map_path, f'{dataset}_act_map.json')
